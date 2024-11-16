@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestió de Clients</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: Arial, sans-serif;
+        }
+        header {
+            background-color: #0d6efd;
+            color: white;
+            padding: 1.5rem 0;
+            text-align: center;
+        }
+        .btn-custom {
+            background-color: #0d6efd;
+            color: white;
+        }
+        .btn-custom:hover {
+            background-color: #004dcf;
+        }
+        .modal-header {
+            background-color: #0d6efd;
+            color: white;
+        }
+        .client-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid #e7e7e7;
+            background-color: #fff;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .modal-body {
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Gestió de Clients</h1>
+    </header>
+    <main class="container mt-4">
+        <!-- Formulari d'afegir client -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <h3>Afegir un nou client</h3>
+                <form id="client-form" class="row g-3">
+                    <div class="col-md-4">
+                        <label for="client-name" class="form-label">Nom del Client</label>
+                        <input type="text" id="client-name" class="form-control" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="name" class="form-label">Nom</label>
+                        <input type="text" id="name" class="form-control" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="city" class="form-label">Població</label>
+                        <input type="text" id="city" class="form-control" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="client-type" class="form-label">Tipus de Client</label>
+                        <select id="client-type" class="form-select" required>
+                            <option value="particular">Particular</option>
+                            <option value="empresa">Empresa</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 d-flex align-items-end">
+                        <button type="submit" class="btn btn-custom w-100">Afegir Client</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Llista de clients -->
+        <div class="card">
+            <div class="card-body">
+                <h3>Llista de Clients</h3>
+                <ul id="client-list" class="list-unstyled mt-3"></ul>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal per Afegir Cita -->
+    <div class="modal fade" id="addAppointmentModal" tabindex="-1" aria-labelledby="addAppointmentModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addAppointmentModalLabel">Afegir Cita</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="appointment-form">
+                        <div class="mb-3">
+                            <label for="appointment-date" class="form-label">Data</label>
+                            <input type="date" id="appointment-date" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="appointment-status" class="form-label">Estat</label>
+                            <select id="appointment-status" class="form-select" required>
+                                <option value="acceptat">Acceptat</option>
+                                <option value="pendent">Pendent</option>
+                                <option value="denegat">Denegat</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="appointment-description" class="form-label">Descripció</label>
+                            <textarea id="appointment-description" class="form-control" rows="3" required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-custom">Afegir Cita</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal per veure Cites -->
+    <div class="modal fade" id="viewAppointmentsModal" tabindex="-1" aria-labelledby="viewAppointmentsModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="viewAppointmentsModalLabel">Cites del Client</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <ul id="appointments-list" class="list-unstyled"></ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const clients = JSON.parse(localStorage.getItem("clients")) || [];
+        const clientForm = document.getElementById("client-form");
+        const clientList = document.getElementById("client-list");
+
+        let currentClientId = null;
+
+        // Afegir client
+        clientForm.addEventListener("submit", (e) => {
+            e.preventDefault();
+            const client = {
+                id: Date.now(),
+                clientName: document.getElementById("client-name").value,
+                name: document.getElementById("name").value,
+                city: document.getElementById("city").value,
+                type: document.getElementById("client-type").value,
+                appointments: [],
+            };
+            clients.push(client);
+            saveClients();
+            renderClients();
+            clientForm.reset();
+        });
+
+        // Guardar dades a localStorage
+        function saveClients() {
+            localStorage.setItem("clients", JSON.stringify(clients));
+        }
+
+        // Renderitzar clients
+        function renderClients() {
+            clientList.innerHTML = "";
+            clients.forEach((client) => {
+                const clientItem = document.createElement("li");
+                clientItem.className = "client-item";
+                clientItem.innerHTML = `
+                    <div>
+                        <strong>${client.clientName}</strong> (${client.type}) <br>
+                        Població: ${client.city}
+                    </div>
+                    <div class="buttons">
+                        <button class="btn btn-sm btn-custom" onclick="editClient(${client.id})">Editar</button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteClient(${client.id})">Esborrar</button>
+                        <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#addAppointmentModal" onclick="setCurrentClient(${client.id})">Afegir Cita</button>
+                        <button class="btn btn-sm btn-secondary" data-bs-toggle="modal" data-bs-target="#viewAppointmentsModal" onclick="viewAppointments(${client.id})">Veure Cites</button>
+                    </div>
+                `;
+                clientList.appendChild(clientItem);
+            });
+        }
+
+        // Editar client
+        function editClient(clientId) {
+            const client = clients.find((c) => c.id === clientId);
+            const newName = prompt("Nou nom del client:", client.clientName);
+            if (newName) {
+                client.clientName = newName;
+                saveClients();
+                renderClients();
+            }
+        }
+
+        // Esborrar client
+        function deleteClient(clientId) {
+            const confirmDelete = confirm("Segur que vols esborrar aquest client?");
+            if (confirmDelete) {
+                const index = clients.findIndex((c) => c.id === clientId);
+                if (index !== -1) {
+                    clients.splice(index, 1);
+                    saveClients();
+                    renderClients();
+                }
+            }
+        }
+
+        // Afegir cita
+        function setCurrentClient(clientId) {
+            currentClientId = clientId;
+        }
+
+        document.getElementById("appointment-form").addEventListener("submit", (e) => {
+            e.preventDefault();
+            const appointment = {
+                date: document.getElementById("appointment-date").value,
+                status: document.getElementById("appointment-status").value,
+                description: document.getElementById("appointment-description").value,
+            };
+            const client = clients.find((c) => c.id === currentClientId);
+            client.appointments.push(appointment);
+            saveClients();
+            document.getElementById("addAppointmentModal").querySelector('.btn-close').click();
+            renderClients();
+        });
+
+        // Veure cites
+        function viewAppointments(clientId) {
+            const client = clients.find((c) => c.id === clientId);
+            const appointmentsList = document.getElementById("appointments-list");
+            appointmentsList.innerHTML = "";
+            client.appointments.forEach((appointment, index) => {
+                const listItem = document.createElement("li");
+                listItem.innerHTML = `
+                    <strong>Cita ${index + 1}:</strong> <br>
+                    Data: ${appointment.date} <br>
+                    Estat: ${appointment.status} <br>
+                    Descripció: ${appointment.description} <br>
+                    <button class="btn btn-sm btn-danger" onclick="deleteAppointment(${client.id}, ${index})">Eliminar Cita</button>
+                `;
+                appointmentsList.appendChild(listItem);
+            });
+        }
+
+        // Eliminar cita
+        function deleteAppointment(clientId, appointmentIndex) {
+            const client = clients.find((c) => c.id === clientId);
+            client.appointments.splice(appointmentIndex, 1);
+            saveClients();
+            renderClients();
+            viewAppointments(clientId); // Actualitzar la llista de cites
+        }
+
+        renderClients();
+    </script>
+</body>
+</html>
